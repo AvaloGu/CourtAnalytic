@@ -19,7 +19,7 @@ class FrameClassifier(nn.Module):
             loss = F.cross_entropy(out, y, label_smoothing=0.1)
         return out, h, loss # (N, 6_classes), (Layers, 1, Hidden), loss
     
-    def configure_optimizers(self, weight_decay = 0.05, learning_rate = 4e-3, device_type = "cpu", master_process = True):
+    def configure_optimizers(self, weight_decay = 4e-5, learning_rate = 4e-3, device_type = "cpu", master_process = True):
         # start with all of the candidate parameters (that require grad)
         param_dict = {pn: p for pn, p in self.named_parameters()}
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
@@ -37,5 +37,5 @@ class FrameClassifier(nn.Module):
         use_fused = fused_available and device_type == "cuda"
         if master_process:
             print(f"using fused AdamW: {use_fused}")
-        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8, fused=use_fused)
+        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8, fused=use_fused)
         return optimizer

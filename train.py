@@ -55,7 +55,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(6216)
 
 
-batch_size = 4 
+batch_size = 16
 
 # print("I am GPUv ", ddp_rank)
 # import sys; sys.exit(0)
@@ -88,10 +88,10 @@ if ddp:
 # raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
 
 # TODO
-max_lr = 6e-4
+max_lr = 4e-4
 min_lr = max_lr * 0.1
-warmup_steps = 715
-max_steps = 5
+warmup_steps = 100
+max_steps = 1000 # around 10 epochs
 
 def get_lr(iter):
     # 1) linear warmup for warmup_iters steps
@@ -168,6 +168,7 @@ for step in range(max_steps):
         # with open(log_file, "a") as f:
         #     f.write(f"{step} train {loss_accum.item():.6f}\n")
 
+torch.save(model_ema.ema.state_dict(), "model_ema.pth")
 
 if ddp:
     destroy_process_group()
