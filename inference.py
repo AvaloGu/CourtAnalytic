@@ -1,4 +1,5 @@
 from Models.ResNet_RS import ResNet_RS
+from Models.ConvNeXt import ConvNeXt
 from Models.Gru import EfficientGRUModel
 from Classifiers.FrameClassifier import FrameClassifier
 from Loaders.Dataloader import DataLoaderLite
@@ -6,8 +7,12 @@ import torch
 import numpy as np
 import pandas as pd
 
-conv  = ResNet_RS()
-rnn = EfficientGRUModel(input_size=2048)
+# conv  = ResNet_RS()
+# rnn = EfficientGRUModel(input_size=2048)
+
+conv = ConvNeXt()
+rnn = EfficientGRUModel()
+
 model = FrameClassifier(conv, rnn)
 
 device_type = "cuda" if torch.cuda.is_available() else "cpu"

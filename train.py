@@ -66,11 +66,11 @@ train_loader = DataLoaderLite(batch_size, process_rank=ddp_rank, num_processes=d
 # faster than the normal float32 matmul. But all variables (tensors) are still stored in float32
 torch.set_float32_matmul_precision('high') 
 
-# ConvNet = ConvNeXt()
-# rnn = EfficientGRUModel()
+ConvNet = ConvNeXt()
+rnn = EfficientGRUModel()
 
-ConvNet = ResNet_RS()
-rnn = EfficientGRUModel(input_size=2048)
+# ConvNet = ResNet_RS()
+# rnn = EfficientGRUModel(input_size=2048)
 
 model = FrameClassifier(ConvNet, rnn)
 model.to(device)
@@ -78,7 +78,7 @@ model.to(device)
 # TODO: turn it off for debugging and tunning
 model = torch.compile(model) # compiler for Neural networks, compile the model to make it faster
 
-optimizer = model.configure_optimizers(weight_decay = 4e-3, learning_rate = 1e-2, device_type = device_type, master_process = master_process)
+optimizer = model.configure_optimizers(weight_decay = 0.05, learning_rate = 1e-2, device_type = device_type, master_process = master_process)
 
 # create EMA wrapper, use it for validation
 model_ema = ModelEma(model, decay=0.999, device='cpu')
@@ -88,7 +88,7 @@ if ddp:
 # raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
 
 # TODO
-max_lr = 4e-4
+max_lr = 4e-3
 min_lr = max_lr * 0.1
 warmup_steps = 100
 max_steps = 1000 # around 10 epochs
