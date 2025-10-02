@@ -184,5 +184,6 @@ class ConvNeXt(nn.Module):
         for i in range(4): # for each of the 4 stages
             x = self.downsample_layers[i](x)
             x = self.stages[i](x)
-            x = self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
-            return self.head(x) # (N, 2)
+            
+        x = self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
+        return self.head(x) # (N, 2)

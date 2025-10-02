@@ -78,7 +78,7 @@ model.to(device)
 # TODO: turn it off for debugging and tunning
 model = torch.compile(model) # compiler for Neural networks, compile the model to make it faster
 
-optimizer = model.configure_optimizers(weight_decay = 0.05, learning_rate = 1e-2, device_type = device_type, master_process = master_process)
+optimizer = model.configure_optimizers(weight_decay = 0.0, learning_rate = 4e-3, device_type = device_type, master_process = master_process)
 
 # create EMA wrapper, use it for validation
 model_ema = ModelEma(model, decay=0.999, device='cpu')

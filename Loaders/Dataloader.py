@@ -43,5 +43,5 @@ class DataLoaderLite:
         # if loading the next batch would be out of bounds, reset
         if self.current_position + (B * self.num_processes) > len(self.files):
             self.current_position = self.process_rank * B
-            random.shuffle(self.files_rand)
+            random.shuffle(self.files)
         return x, y

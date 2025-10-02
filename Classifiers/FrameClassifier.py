@@ -16,7 +16,7 @@ class FrameClassifier(nn.Module):
         # out, h = self.gru(x, h) # (N, 6_classes), (Layers, 1, Hidden)
         loss = None
         if y is not None:
-            loss = F.cross_entropy(x, y, label_smoothing=0.1)
+            loss = F.cross_entropy(x, y, label_smoothing=0.0)
         return x, loss # (N, 2_classes), loss
     
     def configure_optimizers(self, weight_decay = 4e-5, learning_rate = 4e-3, device_type = "cpu", master_process = True):
