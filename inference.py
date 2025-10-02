@@ -11,9 +11,8 @@ import pandas as pd
 # rnn = EfficientGRUModel(input_size=2048)
 
 conv = ConvNeXt()
-rnn = EfficientGRUModel()
 
-model = FrameClassifier(conv, rnn)
+model = FrameClassifier(conv)
 
 device_type = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"using {device_type}")
@@ -29,7 +28,7 @@ model.eval()
 batch_size = 16
 max_step = 100 # around 1 epoch
 
-loader = DataLoaderLite(B = batch_size)
+loader = DataLoaderLite(B = batch_size, shuffle=False)
 prediction = []
 correct = torch.zeros((), dtype=torch.long, device=device_type)
 
@@ -41,8 +40,7 @@ for step in range(max_step):
 
     with torch.no_grad():
         with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
-            logits, h, _ = model(x, h = gru_hidden)
-            gru_hidden = h
+            logits, _ = model(x)
 
     pred = logits.argmax(dim = 1) # (B,)
     prediction.append(pred)

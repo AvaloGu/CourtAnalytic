@@ -67,12 +67,12 @@ train_loader = DataLoaderLite(batch_size, process_rank=ddp_rank, num_processes=d
 torch.set_float32_matmul_precision('high') 
 
 ConvNet = ConvNeXt()
-rnn = EfficientGRUModel()
+# rnn = EfficientGRUModel()
 
 # ConvNet = ResNet_RS()
 # rnn = EfficientGRUModel(input_size=2048)
 
-model = FrameClassifier(ConvNet, rnn)
+model = FrameClassifier(ConvNet)
 model.to(device)
 
 # TODO: turn it off for debugging and tunning
@@ -108,8 +108,6 @@ def get_lr(iter):
 
 model.train()
 
-gru_hidden = None
-
 for step in range(max_steps):
     t0 = time.time()
     last_step = (step == max_steps - 1)
@@ -129,14 +127,13 @@ for step in range(max_steps):
     # But the logits (activation before softmax), and matrix multiplies will be converted to bfloat16.
     # TLDR: only some layers selective will be running in BFloat16, other remain in Float32.
     with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
-        logits, h, loss = model(x, y, gru_hidden)
+        logits, loss = model(x, y)
     # we have to scale the loss to account for gradient accumulation,
     # because the gradients just add on each successive backward().
     # addition of gradients corresponds to a SUM in the objective, but
     # instead of a SUM we want MEAN. Scale the loss here so it comes out right
     # loss = loss / grad_accum_steps
     # for now, we won't use gradient accumulation, because we make sure the batch size fits in memory
-    gru_hidden = h.detach()
     loss_accum += loss.detach()
     loss.backward() 
     

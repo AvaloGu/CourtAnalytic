@@ -4,20 +4,20 @@ import inspect
 import torch
 
 class FrameClassifier(nn.Module):
-    def __init__(self, convnet_model, gru_model):
+    def __init__(self, convnet_model):
         super().__init__()
         self.convnet = convnet_model
-        self.gru = gru_model
+        # self.gru = gru_model
 
-    def forward(self, x, y = None, h=None):
+    def forward(self, x, y = None):
         # x is (N, 3, 224, 224)
         # h is None at the beginning of the video
-        x = self.convnet(x) # (N, 768)
-        out, h = self.gru(x, h) # (N, 6_classes), (Layers, 1, Hidden)
+        x = self.convnet(x) # (N, 2)
+        # out, h = self.gru(x, h) # (N, 6_classes), (Layers, 1, Hidden)
         loss = None
         if y is not None:
-            loss = F.cross_entropy(out, y, label_smoothing=0.1)
-        return out, h, loss # (N, 6_classes), (Layers, 1, Hidden), loss
+            loss = F.cross_entropy(x, y, label_smoothing=0.1)
+        return x, loss # (N, 2_classes), loss
     
     def configure_optimizers(self, weight_decay = 4e-5, learning_rate = 4e-3, device_type = "cpu", master_process = True):
         # start with all of the candidate parameters (that require grad)

@@ -109,7 +109,7 @@ class ConvNeXt(nn.Module):
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
         head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
     """
-    def __init__(self, in_chans=3, num_classes=1000, 
+    def __init__(self, in_chans=3, num_classes=2, 
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0., 
                  layer_scale_init_value=1e-6, head_init_scale=1.,
                  ):
@@ -150,7 +150,7 @@ class ConvNeXt(nn.Module):
             cur += depths[i]
 
         self.norm = nn.LayerNorm(dims[-1], eps=1e-6) # final norm layer
-        # self.head = nn.Linear(dims[-1], num_classes) # (768, 1000)
+        self.head = nn.Linear(dims[-1], num_classes) # (768, 2)
 
         # apply is a method of nn.Module in PyTorch. It recursively applies a given function to every submodule/layers 
         # (including itself) in the module hierarchy. This is commonly used for custom initialization.
@@ -160,8 +160,8 @@ class ConvNeXt(nn.Module):
         self.apply(self._init_weights)
 
         # multiplies all elements of the tensor by head_init_scale (a scalar).
-        # self.head.weight.data.mul_(head_init_scale)
-        # self.head.bias.data.mul_(head_init_scale)
+        self.head.weight.data.mul_(head_init_scale)
+        self.head.bias.data.mul_(head_init_scale)
 
     def _init_weights(self, m):
         # m is a module (submodule, layer) in the network
@@ -184,4 +184,5 @@ class ConvNeXt(nn.Module):
         for i in range(4): # for each of the 4 stages
             x = self.downsample_layers[i](x)
             x = self.stages[i](x)
-        return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
+            x = self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
+            return self.head(x) # (N, 2)

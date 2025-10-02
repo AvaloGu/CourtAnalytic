@@ -3,10 +3,11 @@ import torch
 import os
 from torchvision import transforms
 from PIL import Image
+import random
 
 
 class DataLoaderLite:
-    def __init__(self, B, process_rank = 0, num_processes = 1):
+    def __init__(self, B, process_rank = 0, num_processes = 1, shuffle = True):
         self.B = B
 
         self.process_rank = process_rank
@@ -15,6 +16,8 @@ class DataLoaderLite:
         self.imgfolder = "frames" 
 
         self.files = sorted([f for f in os.listdir(self.imgfolder) if f.endswith(".jpg")])
+        if shuffle:
+            random.shuffle(self.files)
         print(f"loaded {len(self.files)} images from {self.imgfolder}")
         self.transform = transforms.Compose([transforms.Resize((224, 224)), 
                                              transforms.ToTensor(), 
@@ -40,4 +43,5 @@ class DataLoaderLite:
         # if loading the next batch would be out of bounds, reset
         if self.current_position + (B * self.num_processes) > len(self.files):
             self.current_position = self.process_rank * B
+            random.shuffle(self.files_rand)
         return x, y
