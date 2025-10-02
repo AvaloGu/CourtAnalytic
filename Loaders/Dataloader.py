@@ -14,10 +14,8 @@ class DataLoaderLite:
         self.num_processes = num_processes
 
         self.imgfolder = "frames" 
-
         self.files = sorted([f for f in os.listdir(self.imgfolder) if f.endswith(".jpg")])
-        if shuffle:
-            random.shuffle(self.files)
+
         print(f"loaded {len(self.files)} images from {self.imgfolder}")
         self.transform = transforms.Compose([transforms.Resize((224, 224)), 
                                              transforms.ToTensor(), 
@@ -27,15 +25,22 @@ class DataLoaderLite:
         self.target = np.loadtxt("target.csv", delimiter=",", dtype=int)
         self.target = torch.from_numpy(self.target).long() # pytorch wants long tensors for labels
         assert len(self.files) == len(self.target), "number of images and targets must match"
+        
+        self.indices = list(range(len(self.files)))
+        if shuffle:
+            random.shuffle(self.indices)
 
         self.current_position = self.process_rank * B # process_rank starts at 0
 
     def next_batch(self):
         B = self.B
-        clip_files = self.files[self.current_position : self.current_position + B]
+
+        indices = self.indices[self.current_position : self.current_position + B]
+        clip_files = [self.files[i] for i in indices]
+
         frames = [self.transform(Image.open(os.path.join(self.imgfolder, f)).convert("RGB")) for f in clip_files]
         x = torch.stack(frames, dim=0) # (B, 3, 224, 224)
-        y = self.target[self.current_position : self.current_position + B] # (B,)
+        y = self.target[indices] # (B,)
         
         # advance the current position
         self.current_position += B * self.num_processes
@@ -43,5 +48,5 @@ class DataLoaderLite:
         # if loading the next batch would be out of bounds, reset
         if self.current_position + (B * self.num_processes) > len(self.files):
             self.current_position = self.process_rank * B
-            random.shuffle(self.files)
+            random.shuffle(self.indices)
         return x, y
