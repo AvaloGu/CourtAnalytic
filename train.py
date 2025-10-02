@@ -8,6 +8,7 @@ import os
 import math
 from Loaders.Dataloader import DataLoaderLite
 from timm.utils import ModelEma
+import matplotlib.pyplot as plt
 
 
 # -----------------------------------------------------------------------------
@@ -108,6 +109,8 @@ def get_lr(iter):
 
 model.train()
 
+loss_plot = []
+
 for step in range(max_steps):
     t0 = time.time()
     last_step = (step == max_steps - 1)
@@ -164,6 +167,9 @@ for step in range(max_steps):
         print(f"step {step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | img/sec: {examples_per_sec:.2f}")
         # with open(log_file, "a") as f:
         #     f.write(f"{step} train {loss_accum.item():.6f}\n")
+        loss_plot.append(loss_accum.item())
+
+plt.plot(torch.tensor(loss_plot).view(-1, 200).mean(1))
 
 torch.save(model_ema.ema.state_dict(), "model_ema.pth")
 
