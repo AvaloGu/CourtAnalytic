@@ -22,7 +22,7 @@ class DataLoaderLite:
                                              transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                                                   std=[0.229, 0.224, 0.225])])
         
-        self.target = np.loadtxt("target.csv", delimiter=",", dtype=int)
+        self.target = np.loadtxt("target_multi_class.csv", delimiter=",", dtype=int)
         self.target = torch.from_numpy(self.target).long() # pytorch wants long tensors for labels
         assert len(self.files) == len(self.target), "number of images and targets must match"
         

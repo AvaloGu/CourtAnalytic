@@ -9,6 +9,7 @@ import math
 from Loaders.Dataloader import DataLoaderLite
 from timm.utils import ModelEma
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 # -----------------------------------------------------------------------------
@@ -25,6 +26,9 @@ import torch.distributed as dist
 # set up DDP (distributed data parallel).
 # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
 ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+if ddp:
+    print(f"using ddp")
+
 if ddp:
     # use of DDP atm demands CUDA, we set the device appropriately according to rank
     assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
@@ -169,7 +173,10 @@ for step in range(max_steps):
         #     f.write(f"{step} train {loss_accum.item():.6f}\n")
         loss_plot.append(loss_accum.item())
 
-plt.plot(torch.tensor(loss_plot).view(-1, 200).mean(1))
+loss_plot = torch.tensor(loss_plot).view(-1, 50).mean(1) # (20,)
+loss_plot = loss_plot.numpy()
+df = pd.DataFrame(loss_plot)
+df.to_csv("loss_plot.csv", index=False)
 
 torch.save(model_ema.ema.state_dict(), "model_ema.pth")
 
