@@ -1,16 +1,17 @@
 import time
 from Models.ConvNeXt import ConvNeXt
-from Models.Gru import EfficientGRUModel
+from Models.Gru import EfficientGRUModel, GRUStage2
 from Models.ResNet_RS import ResNet_RS
-from Classifiers.FrameClassifier import FrameClassifier
+from Classifiers.FrameClassifier import FrameClassifier, ShotPredictor
 import torch
 import os
 import math
-from Loaders.Dataloader import DataLoaderLite
+from Loaders.Dataloader import DataLoaderLite, DataLoaderStage2
 from timm.utils import ModelEma
 import matplotlib.pyplot as plt
 import pandas as pd
 
+STAGE2 = True
 
 # -----------------------------------------------------------------------------
 # simple launch:
@@ -26,8 +27,7 @@ import torch.distributed as dist
 # set up DDP (distributed data parallel).
 # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
 ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
-if ddp:
-    print(f"using ddp")
+print(f"using ddp: {ddp}")
 
 if ddp:
     # use of DDP atm demands CUDA, we set the device appropriately according to rank
@@ -65,7 +65,10 @@ batch_size = 16
 # print("I am GPUv ", ddp_rank)
 # import sys; sys.exit(0)
 
-train_loader = DataLoaderLite(batch_size, process_rank=ddp_rank, num_processes=ddp_world_size)
+if STAGE2:
+    train_loader = DataLoaderStage2(process_rank=ddp_rank, num_processes=ddp_world_size) 
+else:
+    train_loader = DataLoaderLite(batch_size, process_rank=ddp_rank, num_processes=ddp_world_size)
 
 # use tensor float32 precision for all matrix multiplications
 # faster than the normal float32 matmul. But all variables (tensors) are still stored in float32
@@ -77,8 +80,12 @@ ConvNet = ConvNeXt()
 # ConvNet = ResNet_RS()
 # rnn = EfficientGRUModel(input_size=2048)
 
-model = FrameClassifier(ConvNet)
-model.to(device)
+if STAGE2:
+    rnn = GRUStage2()
+    model = ShotPredictor(ConvNet, rnn)
+else:
+    model = FrameClassifier(ConvNet)
+model.to(device_type)
 
 # TODO: turn it off for debugging and tunning
 model = torch.compile(model) # compiler for Neural networks, compile the model to make it faster
@@ -122,7 +129,7 @@ for step in range(max_steps):
     optimizer.zero_grad()
     loss_accum = 0.0
 
-    x, y = train_loader.next_batch()
+    x, y = train_loader.next_batch() # (B, 3, 224, 224), (Num of shots in this point,)
     x, y = x.to(device), y.to(device)
         
     # autocast context manager, it should only surround forward pass and loss calculation
