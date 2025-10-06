@@ -97,6 +97,7 @@ class GRUEncoder(nn.Module):
         self.hidden_size = hidden_size
         self.gru = nn.GRU(input_size, hidden_size, num_layers=number_layers, batch_first=False, bidirectional=True)
         self.fc = nn.Linear(2*hidden_size, hidden_size)
+        self.ln_hid = nn.LayerNorm(hidden_size*2)
         self.ln = nn.LayerNorm(hidden_size*2)
 
     def forward(self, x, h=None):
@@ -109,7 +110,7 @@ class GRUEncoder(nn.Module):
         h_forward = hn[:, 0] # (Layers, 1, hidden)
         h_backward = hn[:, 1] # (Layers, 1, hidden)
         hidden = torch.cat((h_forward, h_backward), dim=-1) # (Layers, 1, 2*hidden)
-        hidden = self.fc(hidden) # (Layers, 1, hidden)
+        hidden = self.fc(self.ln_hid(hidden)) # (Layers, 1, hidden)
 
         y = y.squeeze(1) # (NumFrames, Hidden*2)
         out = self.ln(y) # (NumFrames, hidden_size*2)
@@ -134,6 +135,9 @@ class GRUDecoder(nn.Module):
         self.att_proj_v = nn.Linear(hidden_size*2, hidden_size)
 
         self.gru = nn.GRU(2*hidden_size, hidden_size, num_layers=number_layers, batch_first=False)
+
+        self.ln_hid = nn.LayerNorm(hidden_size)
+        self.ln_out = nn.LayerNorm(3*hidden_size)
         self.fc_out = nn.Linear(3*hidden_size, vocab_size)
 
     def forward(self, enc_output, shot, hidden):
@@ -156,9 +160,11 @@ class GRUDecoder(nn.Module):
 
         gru_input = torch.cat((tok_emb, c), dim = 2) #  # (1, 1, 2*hidden_size)
         output, h = self.gru(gru_input, hidden) # (1, 1, hidden_size), (Layers, 1, hidden_size)
+
+        h = self.ln_hid(h)
         
         pre_pred = torch.cat((output, gru_input), dim=2).squeeze(1) # (1, 3*hidden_size)
-        prediction = self.fc_out(pre_pred) # (1, vocab_size)
+        prediction = self.fc_out(self.ln_out(pre_pred)) # (1, vocab_size)
 
         return prediction.squeeze(0), h # (1, vocab_size), (Layers, 1, hidden_size)
         
