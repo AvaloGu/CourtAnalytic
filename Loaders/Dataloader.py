@@ -56,6 +56,8 @@ class DataLoaderLite:
 class DataLoaderStage2:
     def __init__(self, process_rank = 0, num_processes = 1):
 
+        self.num_examples = 0
+
         self.process_rank = process_rank
         self.num_processes = num_processes
 
@@ -109,6 +111,7 @@ class DataLoaderStage2:
         frames = [self.transform(Image.open(os.path.join(self.imgfolder, f)).convert("RGB")) for f in clip_files]
         x = torch.stack(frames, dim=0) # (B, 3, 224, 224)
         y = self.target[self.current_position]
+        self.num_examples = len(y)
         y = torch.tensor(y) # (Num of shots in this point,)
         
         # advance the current position

@@ -43,6 +43,7 @@ class FrameClassifier(nn.Module):
 
 class ShotPredictor(nn.Module):
     def __init__(self, convnet, rnn):
+        super().__init__()
         self.convnet = convnet
         self.rnn = rnn
 

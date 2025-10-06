@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from timm.layers import trunc_normal_, DropPath
 # from timm.models.registry import register_model
 
+STAGE1=False
+
 
 class LayerNorm(nn.Module):
     r""" LayerNorm that supports two data formats: channels_last (default) or channels_first. 
@@ -150,7 +152,13 @@ class ConvNeXt(nn.Module):
             cur += depths[i]
 
         self.norm = nn.LayerNorm(dims[-1], eps=1e-6) # final norm layer
-        self.head = nn.Linear(dims[-1], num_classes) # (768, 2)
+
+        if STAGE1:
+            self.head = nn.Linear(dims[-1], num_classes) # (768, 2)
+
+            # multiplies all elements of the tensor by head_init_scale (a scalar).
+            self.head.weight.data.mul_(head_init_scale)
+            self.head.bias.data.mul_(head_init_scale)
 
         # apply is a method of nn.Module in PyTorch. It recursively applies a given function to every submodule/layers 
         # (including itself) in the module hierarchy. This is commonly used for custom initialization.
@@ -158,10 +166,6 @@ class ConvNeXt(nn.Module):
         # submodules (including layers inside ConvNeXt, Block, etc.). This ensures that every layer, no matter how deeply nested, 
         # is processed.
         self.apply(self._init_weights)
-
-        # multiplies all elements of the tensor by head_init_scale (a scalar).
-        self.head.weight.data.mul_(head_init_scale)
-        self.head.bias.data.mul_(head_init_scale)
 
     def _init_weights(self, m):
         # m is a module (submodule, layer) in the network
@@ -186,4 +190,8 @@ class ConvNeXt(nn.Module):
             x = self.stages[i](x)
             
         x = self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
-        return self.head(x) # (N, 2)
+
+        if STAGE1:
+            return self.head(x) # (N, 2)
+        else:
+            return x

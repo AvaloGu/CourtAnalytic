@@ -179,7 +179,7 @@ class GRUStage2(nn.Module):
         # y: (Num of shots in this point,)
 
         # append start of the point token
-        point_token = torch.tensor([13], dtype=torch.long)
+        point_token = torch.tensor([13], dtype=torch.long, device=y.device)
         y = torch.cat((point_token, y), dim=0) # (Num of shots in this point+1,)
 
         enc_output, h = self.encoder(x) # (NumFrames, hidden_size*2), (Layers, 1 hidden)

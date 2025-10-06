@@ -172,7 +172,10 @@ for step in range(max_steps):
 
     t1 = time.time()
     dt = t1 - t0 # time differenece in seconds
-    examples_processed = train_loader.B * ddp_world_size
+    if STAGE2:
+        examples_processed = train_loader.num_examples * ddp_world_size
+    else:
+        examples_processed = train_loader.B * ddp_world_size
     examples_per_sec = examples_processed / dt
     if master_process:
         print(f"step {step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | img/sec: {examples_per_sec:.2f}")
