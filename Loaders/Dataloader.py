@@ -8,9 +8,10 @@ from itertools import groupby
 
 
 class DataLoaderLite:
-    def __init__(self, B=64, process_rank = 0, num_processes = 1, shuffle = True):
+    def __init__(self, B=16, process_rank = 0, num_processes = 1, train = True):
 
-        self.B = B
+        self.B = 16
+        self.train = train
 
         self.process_rank = process_rank
         self.num_processes = num_processes
@@ -29,13 +30,31 @@ class DataLoaderLite:
         assert len(self.files) == len(self.target), "number of images and targets must match"
         
         self.indices = list(range(len(self.files)))
-        self.indices = [self.indices[i:i+B] for i in range(0, len(self.files), B)] # list of lists, each of length B
 
-        if shuffle:
-            # we want to randomize the training chunks, but within each chunk the order is intact
-            random.shuffle(self.indices) 
+        if train:
+            self.re_randomize(initialize=True)
+        else:
+            self.indices = [self.indices[i:i+self.B] for i in range(0, len(self.files), self.B)]
 
         self.current_position = self.process_rank # process_rank starts at 0
+
+    def re_randomize(self, initialize=False):
+        # reshuffle self.indices, additionally, we'll train with a different batch size after an epoch
+        # we do this as we do not want the model to see exact same chunks every epoch
+        batch_sizes = [16, 32, 64, 128]
+        b_index = batch_sizes.index(self.B)
+
+        if initialize or (b_index + 1 >= len(batch_sizes)):
+            self.B = batch_sizes[0]
+        else:
+            self.B = batch_sizes[b_index+1]
+
+        self.indices = [self.indices[i:i+self.B] for i in range(0, len(self.files), self.B)] # list of lists, each of length B
+        # In Python, slicing a list (or any sequence) is gracefully bounded:
+
+        # we want to randomize the training chunks, but within each chunk the order is intact
+        random.shuffle(self.indices) 
+
 
     def next_batch(self):
 
@@ -49,10 +68,10 @@ class DataLoaderLite:
         # advance the current position
         self.current_position += self.num_processes
 
-        # if loading the next batch would be out of bounds, reset
+        # if loading the next batch would be out of bounds, reset for next epoch
         if self.current_position >= len(self.indices):
             self.current_position = self.process_rank
-            random.shuffle(self.indices)
+            self.re_randomize()
         return x, y
     
 

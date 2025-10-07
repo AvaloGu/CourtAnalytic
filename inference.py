@@ -39,12 +39,13 @@ max_step = 100 # around 1 epoch
 if STAGE2:
     loader = DataLoaderStage2() 
 else:
-    loader = DataLoaderLite(B = batch_size, shuffle=False)
+    loader = DataLoaderLite(B = batch_size, shuffle=False) # TODO this need to be fixed for inference
 
 prediction = []
 correct = torch.zeros((), dtype=torch.long, device=device_type)
 
 # gru_hidden = None
+# TODO gru_hidden
 
 for step in range(max_step):
     x, y = loader.next_batch()
