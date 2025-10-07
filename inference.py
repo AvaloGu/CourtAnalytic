@@ -10,7 +10,7 @@ import pandas as pd
 STAGE2 = True
 
 # conv  = ResNet_RS()
-# rnn = EfficientGRUModel(input_size=2048)
+rnn = EfficientGRUModel()
 
 conv = ConvNeXt()
 
@@ -18,7 +18,8 @@ if STAGE2:
     rnn = GRUStage2()
     model = ShotPredictor(conv, rnn)
 else:
-    model = FrameClassifier(conv)
+    rnn = EfficientGRUModel()
+    model = FrameClassifier(conv, rnn)
 
 
 device_type = "cuda" if torch.cuda.is_available() else "cpu"

@@ -4,10 +4,10 @@ import inspect
 import torch
 
 class FrameClassifier(nn.Module):
-    def __init__(self, convnet_model):
+    def __init__(self, convnet_model, gru_model):
         super().__init__()
         self.convnet = convnet_model
-        # self.gru = gru_model
+        self.gru = gru_model
 
     def forward(self, x, y = None):
         # x is (N, 3, 224, 224)

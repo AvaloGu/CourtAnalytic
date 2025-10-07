@@ -8,7 +8,8 @@ from itertools import groupby
 
 
 class DataLoaderLite:
-    def __init__(self, B, process_rank = 0, num_processes = 1, shuffle = True):
+    def __init__(self, B=64, process_rank = 0, num_processes = 1, shuffle = True):
+
         self.B = B
 
         self.process_rank = process_rank
@@ -28,15 +29,17 @@ class DataLoaderLite:
         assert len(self.files) == len(self.target), "number of images and targets must match"
         
         self.indices = list(range(len(self.files)))
-        if shuffle:
-            random.shuffle(self.indices)
+        self.indices = [self.indices[i:i+B] for i in range(0, len(self.files), B)] # list of lists, each of length B
 
-        self.current_position = self.process_rank * B # process_rank starts at 0
+        if shuffle:
+            # we want to randomize the training chunks, but within each chunk the order is intact
+            random.shuffle(self.indices) 
+
+        self.current_position = self.process_rank # process_rank starts at 0
 
     def next_batch(self):
-        B = self.B
 
-        indices = self.indices[self.current_position : self.current_position + B]
+        indices = self.indices[self.current_position]
         clip_files = [self.files[i] for i in indices]
 
         frames = [self.transform(Image.open(os.path.join(self.imgfolder, f)).convert("RGB")) for f in clip_files]
@@ -44,11 +47,11 @@ class DataLoaderLite:
         y = self.target[indices] # (B,)
         
         # advance the current position
-        self.current_position += B * self.num_processes
+        self.current_position += self.num_processes
 
         # if loading the next batch would be out of bounds, reset
-        if self.current_position + (B * self.num_processes) > len(self.files):
-            self.current_position = self.process_rank * B
+        if self.current_position >= len(self.indices):
+            self.current_position = self.process_rank
             random.shuffle(self.indices)
         return x, y
     
@@ -118,6 +121,6 @@ class DataLoaderStage2:
         self.current_position += self.num_processes
 
         # if loading the next batch would be out of bounds, reset
-        if self.current_position + self.num_processes > len(self.target):
+        if self.current_position >= len(self.target):
             self.current_position = self.process_rank
         return x, y # (B, 3, 224, 224), (Num of shots in this point,)

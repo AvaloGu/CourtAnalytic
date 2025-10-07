@@ -62,8 +62,9 @@ class EfficientGRUModel(nn.Module):
         super().__init__()
 
         # TODO: nn.gru also has dropout which you might want to use
-        self.gru = nn.GRU(input_size, hidden_size, num_layers=number_layers, batch_first=False)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.gru = nn.GRU(input_size, hidden_size, num_layers=number_layers, batch_first=False, bidirectional=True)
+        self.ln = nn.LayerNorm(2*hidden_size)
+        self.fc = nn.Linear(2*hidden_size, output_size)
 
     def forward(self, x, h=None):
         # TODO: for efficiency, utlize the batch dim, but should we fold the frames?
@@ -78,10 +79,10 @@ class EfficientGRUModel(nn.Module):
             # already (Layers, 1, Hidden)
             h0 = h.to(x.device)
 
-        y, hn = self.gru(x, h0) # y:(NumFrames, 1, Hidden), hn:(Layers, 1, Hidden)
-        y = y.squeeze(1) # (NumFrames, Hidden)
-        out = self.fc(y) # (NumFrames, output_size)
-        return out, hn # (NumFrames, output_size), (Layers, 1, Hidden)
+        y, hn = self.gru(x, h0) # y:(NumFrames, 1, Hidden*2), hn:(2*Layers, 1, Hidden)
+        y = y.squeeze(1) # (NumFrames, Hidden*2)
+        out = self.fc(self.ln(y)) # (NumFrames, output_size)
+        return out, hn # (NumFrames, output_size), (2*Layers, 1, Hidden)
     
 
 class GRUEncoder(nn.Module):

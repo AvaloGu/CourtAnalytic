@@ -11,7 +11,7 @@ from timm.utils import ModelEma
 import matplotlib.pyplot as plt
 import pandas as pd
 
-STAGE2 = True
+STAGE2 = False
 
 # -----------------------------------------------------------------------------
 # simple launch:
@@ -60,7 +60,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(6216)
 
 
-batch_size = 16
+batch_size = 64
 
 # print("I am GPUv ", ddp_rank)
 # import sys; sys.exit(0)
@@ -84,7 +84,8 @@ if STAGE2:
     rnn = GRUStage2()
     model = ShotPredictor(ConvNet, rnn)
 else:
-    model = FrameClassifier(ConvNet)
+    rnn = EfficientGRUModel()
+    model = FrameClassifier(ConvNet, rnn)
 model.to(device_type)
 
 # TODO: turn it off for debugging and tunning
@@ -103,7 +104,7 @@ if ddp:
 max_lr = 4e-3
 min_lr = max_lr * 0.1
 warmup_steps = 100
-max_steps = 1000 # around 10 epochs
+max_steps = 500 # around 5 epochs
 
 def get_lr(iter):
     # 1) linear warmup for warmup_iters steps
