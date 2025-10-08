@@ -68,7 +68,7 @@ batch_size = 64
 if STAGE2:
     train_loader = DataLoaderStage2(process_rank=ddp_rank, num_processes=ddp_world_size) 
 else:
-    train_loader = DataLoaderLite(batch_size, process_rank=ddp_rank, num_processes=ddp_world_size)
+    train_loader = DataLoaderLite(process_rank=ddp_rank, num_processes=ddp_world_size)
 
 # use tensor float32 precision for all matrix multiplications
 # faster than the normal float32 matmul. But all variables (tensors) are still stored in float32
