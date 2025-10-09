@@ -40,10 +40,14 @@ if STAGE2:
 else:
     loader = DataLoaderLite(B = batch_size, shuffle=False)
 
+if STAGE2:
+    max_step = len(loader.target)
+
 prediction = []
 correct = torch.zeros((), dtype=torch.long, device=device_type)
 
 # gru_hidden = None
+num_shots = 0
 
 for step in range(max_step):
     x, y = loader.next_batch()
@@ -51,18 +55,22 @@ for step in range(max_step):
 
     with torch.no_grad():
         with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
-            logits, _ = model(x)
+            logits, _ = model(x, y)
 
     pred = logits.argmax(dim = 1) # (B,)
     prediction.append(pred)
 
     if STAGE2:
-        point_token = torch.tensor([13], dtype=torch.long)
-        pred.append(point_token)
+        point_token = torch.tensor([13], dtype=torch.long, device=pred.device) # point token z
+        prediction.append(point_token)
+        num_shots += len(y)
 
     correct += (pred == y).sum()
 
-accuracy = (correct.float() / 1600).item()
+if STAGE2:
+    accuracy = (correct.float() / num_shots).item()
+else:
+    accuracy = (correct.float() / 1600).item()
 print(f"accuracy is {accuracy:.4f}")
 
 out = torch.cat(prediction, dim=0).cpu() # (num_of_examples,)
@@ -75,7 +83,8 @@ if STAGE2:
     df = pd.DataFrame(decode, columns=["predictions"])
 else:
     df = pd.DataFrame(out)
-    df.to_csv("out_tensor.csv", index=False)
+
+df.to_csv("out_tensor.csv", index=False)
 
 
 

@@ -65,10 +65,10 @@ class DataLoaderStage2:
         self.files = sorted([f for f in os.listdir(self.imgfolder) if f.endswith(".jpg")])
 
         print(f"loaded {len(self.files)} images from {self.imgfolder}")
-        self.transform = transforms.Compose([transforms.Resize((224, 224)), 
+        self.transform = transforms.Compose([transforms.Resize((384, 384)), 
                                              transforms.ToTensor(), 
-                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                                                  std=[0.229, 0.224, 0.225])])
+                                             transforms.Normalize(mean=[0.3682, 0.3794, 0.4306], 
+                                                                  std=[0.1887, 0.1838, 0.1715])])
         
         target = np.loadtxt("target_stage2.csv", dtype=str)
         # the point separator 'z' is encoded as 13, vocab_size is 13
@@ -118,6 +118,6 @@ class DataLoaderStage2:
         self.current_position += self.num_processes
 
         # if loading the next batch would be out of bounds, reset
-        if self.current_position + self.num_processes > len(self.target):
+        if self.current_position >= len(self.target):
             self.current_position = self.process_rank
         return x, y # (B, 3, 224, 224), (Num of shots in this point,)

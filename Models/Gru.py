@@ -162,7 +162,7 @@ class GRUDecoder(nn.Module):
         output, h = self.gru(gru_input, hidden) # (1, 1, hidden_size), (Layers, 1, hidden_size)
 
         h = self.ln_hid(h)
-        
+
         pre_pred = torch.cat((output, gru_input), dim=2).squeeze(1) # (1, 3*hidden_size)
         prediction = self.fc_out(self.ln_out(pre_pred)) # (1, vocab_size)
 
@@ -195,5 +195,5 @@ class GRUStage2(nn.Module):
             pred, h = self.decoder(enc_output, y[i], h)
             outputs.append(pred)
 
-        logits = torch.stack(outputs, dim=0)
+        logits = torch.stack(outputs, dim=0) # (num of shots, vocab_size)
         return logits

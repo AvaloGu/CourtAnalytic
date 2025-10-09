@@ -47,7 +47,7 @@ class ShotPredictor(nn.Module):
         self.convnet = convnet
         self.rnn = rnn
 
-    def forward(self, x, y):
+    def forward(self, x, y=None):
         # x: (N, 3, 224, 224)
         # y: (Num of shots in this point,)
         x = self.convnet(x) # (N, 768)
