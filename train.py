@@ -11,7 +11,7 @@ from timm.utils import ModelEma
 import matplotlib.pyplot as plt
 import pandas as pd
 
-STAGE2 = True
+STAGE2 = False
 
 # -----------------------------------------------------------------------------
 # simple launch:
@@ -60,7 +60,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(6216)
 
 
-batch_size = 16
+batch_size = 216 
 
 # print("I am GPUv ", ddp_rank)
 # import sys; sys.exit(0)
